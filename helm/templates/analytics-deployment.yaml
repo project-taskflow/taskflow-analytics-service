@@ -1,0 +1,61 @@
+{{- if .Values.analyticsService.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ .Values.analyticsService.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.analyticsService.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.analyticsService.name }}
+  strategy:
+    blueGreen:
+      activeService: {{ .Values.analyticsService.name }}
+      previewService: {{ printf "%s-preview" .Values.analyticsService.name }}
+      autoPromotionEnabled: true
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.analyticsService.name }}
+    spec:
+{{- with .Values.analyticsService.podSecurityContext }}
+      securityContext:
+{{ toYaml . | nindent 8 }}
+{{- end }}
+      containers:
+        - name: {{ .Values.analyticsService.name }}
+          image: {{ .Values.analyticsService.image }}
+          imagePullPolicy: {{ .Values.analyticsService.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.analyticsService.containerPort }}
+{{- with .Values.analyticsService.env }}
+          env:
+{{ toYaml . | nindent 12 }}
+{{- end }}
+{{- with .Values.analyticsService.resources }}
+          resources:
+{{ toYaml . | nindent 12 }}
+{{- end }}
+{{- with .Values.analyticsService.livenessProbe }}
+          livenessProbe:
+{{ toYaml . | nindent 12 }}
+{{- end }}
+{{- with .Values.analyticsService.readinessProbe }}
+          readinessProbe:
+{{ toYaml . | nindent 12 }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.analyticsService.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: {{ .Values.analyticsService.name }}
+  ports:
+    - port: {{ .Values.analyticsService.servicePort }}
+      targetPort: {{ .Values.analyticsService.serviceTargetPort }}
+  type: {{ .Values.analyticsService.serviceType }}
+

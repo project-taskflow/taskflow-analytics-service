@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-service
+  namespace: dev
+  # labels:
+  #   app: analytics-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analytics-service
+  template:
+    metadata:
+      labels:
+        app: analytics-service
+    spec:
+      # securityContext:
+      #   runAsNonRoot: true
+      #   runAsUser: 1001
+      containers:
+        - name: analytics-service
+          image: thanusri22/analytics-service:v1.1.1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3005
+          env:
+            - name: PORT
+              value: "3005"
+            - name: MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: MONGODB_URI
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+          # livenessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 3005
+          #   initialDelaySeconds: 15
+          #   periodSeconds: 20
+          # readinessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 3005
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 10
